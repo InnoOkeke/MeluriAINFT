@@ -1,0 +1,10 @@
+# Simplified requirements for Python 3.13 compatibility
+# Install these first, then try the full requirements
+
+flask>=3.0.0
+flask-cors>=4.0.0
+Pillow>=10.0.0
+
+# After the above work, install AI libraries:
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+# pip install diffusers transformers accelerate safetensors

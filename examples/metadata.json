@@ -1,0 +1,30 @@
+{
+  "name": "AI Generated Art #1",
+  "description": "A unique AI-generated NFT that can travel across multiple blockchains using ZetaChain's Universal App architecture",
+  "image": "ipfs://QmExample123/image.png",
+  "attributes": [
+    {
+      "trait_type": "AI Model",
+      "value": "DALL-E 3"
+    },
+    {
+      "trait_type": "Style",
+      "value": "Abstract"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Cross-Chain Enabled",
+      "value": "Yes"
+    },
+    {
+      "trait_type": "Original Chain",
+      "value": "ZetaChain"
+    }
+  ],
+  "external_url": "https://yourproject.com/nft/1",
+  "background_color": "000000",
+  "animation_url": "ipfs://QmExample123/animation.mp4"
+}
