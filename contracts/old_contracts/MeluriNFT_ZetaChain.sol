@@ -4,110 +4,97 @@ pragma solidity 0.8.26;
 import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import {ERC721BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 import {ERC721EnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import {ERC721PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
 import {ERC721URIStorageUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@zetachain/standard-contracts/contracts/nft/contracts/evm/UniversalNFTCore.sol";
+import "@zetachain/standard-contracts/contracts/nft/contracts/zetachain/UniversalNFTCore.sol";
 
-/**
- * @title Meluri AI NFT
- * @dev Universal NFT that can be minted from any chain and transferred cross-chain
- * Based on ZetaChain's official Universal NFT standard
- */
-contract MeluriNFT is
+contract MeluriNFT_ZetaChain is
     Initializable,
     ERC721Upgradeable,
-    ERC721EnumerableUpgradeable,
     ERC721URIStorageUpgradeable,
+    ERC721EnumerableUpgradeable,
+    ERC721PausableUpgradeable,
     OwnableUpgradeable,
     ERC721BurnableUpgradeable,
     UUPSUpgradeable,
     UniversalNFTCore
 {
     uint256 private _nextTokenId;
-    
-    /// @custom:oz-upgrades-unsafe-allow constructor
+
+    /// @custom:oz-upgrades-unsafe-allow constructor state-variable-immutable
     constructor() {
         _disableInitializers();
     }
-    
-    /**
-     * @dev Initialize the contract
-     * @param initialOwner Owner of the contract
-     * @param name NFT collection name
-     * @param symbol NFT collection symbol
-     * @param gas Gas limit for cross-chain transfers
-     * @param gatewayAddress Gateway address for the chain
-     */
+
     function initialize(
         address initialOwner,
         string memory name,
         string memory symbol,
-        uint256 gas,
-        address payable gatewayAddress
+        uint256 gas
     ) public initializer {
         __ERC721_init(name, symbol);
         __ERC721Enumerable_init();
         __ERC721URIStorage_init();
+        __ERC721Pausable_init();
         __Ownable_init(initialOwner);
         __ERC721Burnable_init();
         __UUPSUpgradeable_init();
-        __UniversalNFTCore_init(gatewayAddress, address(this), gas);
+        __UniversalNFTCore_init(gas);
     }
-    
-    /**
-     * @dev Mint a new AI-generated NFT
-     * @param to Address to mint to
-     * @param uri Token URI (metadata)
-     */
-    function mint(address to, string memory uri) public {
-        // Generate globally unique token ID
+
+    function mint(
+        address to,
+        string memory uri
+    ) public {
         uint256 hash = uint256(
             keccak256(abi.encodePacked(address(this), block.number, _nextTokenId++))
         );
         uint256 tokenId = hash & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
-        
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
     }
-    
-    /**
-     * @dev Get total supply of NFTs
-     */
-    function totalSupply() public view override returns (uint256) {
-        return _nextTokenId;
-    }
-    
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
-    
-    // Required overrides
+
     function _update(
         address to,
         uint256 tokenId,
         address auth
-    ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) returns (address) {
+    )
+        internal
+        override(
+            ERC721Upgradeable,
+            ERC721EnumerableUpgradeable,
+            ERC721PausableUpgradeable
+        )
+        returns (address)
+    {
         return super._update(to, tokenId, auth);
     }
-    
+
     function _increaseBalance(
         address account,
         uint128 value
     ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) {
         super._increaseBalance(account, value);
     }
-    
+
     function tokenURI(
         uint256 tokenId
     )
         public
         view
-        override(ERC721Upgradeable, ERC721URIStorageUpgradeable, UniversalNFTCore)
+        override(
+            ERC721Upgradeable,
+            ERC721URIStorageUpgradeable,
+            UniversalNFTCore
+        )
         returns (string memory)
     {
         return super.tokenURI(tokenId);
     }
-    
+
     function supportsInterface(
         bytes4 interfaceId
     )
@@ -123,4 +110,18 @@ contract MeluriNFT is
     {
         return super.supportsInterface(interfaceId);
     }
+
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyOwner {}
+
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
+    }
+
+    receive() external payable {}
 }

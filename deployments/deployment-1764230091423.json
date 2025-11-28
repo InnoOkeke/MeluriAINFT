@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-11-27T07:54:51.423Z",
+  "deployments": [
+    {
+      "network": "zeta_testnet",
+      "chainId": "7001",
+      "address": "0x4570EF43d0c9542488f72Eee4d0c9a17b8Fc8382",
+      "gateway": "0x6c533f7fe93fae114d0954697069df33c9b74fd7",
+      "gasLimit": 1000000,
+      "explorer": "https://athens.explorer.zetachain.com/address/0x4570EF43d0c9542488f72Eee4d0c9a17b8Fc8382"
+    },
+    {
+      "network": "sepolia",
+      "chainId": "11155111",
+      "address": "0xfC01b637054159b767453fc9faB92158Ccd6E0ce",
+      "gateway": "0x0c487a766110c85d301d96e33579c5b317fa4995",
+      "gasLimit": 1000000,
+      "explorer": "https://sepolia.etherscan.io/address/0xfC01b637054159b767453fc9faB92158Ccd6E0ce"
+    },
+    {
+      "network": "base_sepolia",
+      "chainId": "84532",
+      "address": "0x1b45C638B1325234b4FF50b02F5C901d0c2E66b6",
+      "gateway": "0x0c487a766110c85d301d96e33579c5b317fa4995",
+      "gasLimit": 1000000,
+      "explorer": "https://sepolia.basescan.org/address/0x1b45C638B1325234b4FF50b02F5C901d0c2E66b6"
+    }
+  ]
+}

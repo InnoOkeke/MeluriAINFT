@@ -21,7 +21,10 @@ export default function MintNFT({
   // Auto-select chain based on connected wallet
   useEffect(() => {
     if (currentChainId) {
-      const supportedChains = ['7001', '11155111', '50312', '11142220', '10143']
+      const supportedChains = Object.keys(CONFIG.CONTRACTS).filter(chainId => {
+        const address = CONFIG.CONTRACTS[chainId]
+        return address && address !== ''
+      })
       if (supportedChains.includes(currentChainId)) {
         setSelectedChain(currentChainId)
       }
@@ -52,7 +55,7 @@ export default function MintNFT({
       const currentChain = network.chainId.toString()
       
       if (currentChain !== selectedChain) {
-        showStatus(`Please switch to ${CONFIG.MINT_CHAINS[selectedChain]?.name} in your wallet`, 'error')
+        showStatus(`Please switch to ${CONFIG.MINT_CHAINS[selectedChain]?.name} using the button above`, 'error')
         setLoading(false)
         return
       }
@@ -73,7 +76,10 @@ export default function MintNFT({
       showStatus('Preparing to mint...', 'info')
 
       // Get the correct contract address for the selected chain
-      const contractAddress = CONFIG.CONTRACTS[selectedChain] || CONFIG.CONTRACT_ADDRESS
+      const contractAddress = CONFIG.CONTRACTS[selectedChain]
+      if (!contractAddress) {
+        throw new Error(`Contract not deployed on selected chain`)
+      }
       const contract = new ethers.Contract(contractAddress, CONTRACT_ABI, signer)
 
       showStatus('Minting NFT... Please confirm in wallet', 'info')
@@ -83,19 +89,27 @@ export default function MintNFT({
       const receipt = await tx.wait()
       
       // Parse logs to get token ID from Transfer event
-      const event = receipt.logs?.find(log => {
+      let tokenId
+      
+      // Try to find Transfer event in logs
+      for (const log of receipt.logs || []) {
         try {
           const parsed = contract.interface.parseLog(log)
-          return parsed?.name === 'Transfer'
-        } catch {
-          return false
+          if (parsed && parsed.name === 'Transfer') {
+            // Transfer event has (from, to, tokenId)
+            tokenId = parsed.args.tokenId?.toString() || parsed.args[2]?.toString()
+            console.log('Found Transfer event, tokenId:', tokenId)
+            break
+          }
+        } catch (e) {
+          // Skip logs that don't match our interface
+          continue
         }
-      })
+      }
       
-      let tokenId
-      if (event) {
-        const parsed = contract.interface.parseLog(event)
-        tokenId = parsed?.args?.tokenId?.toString()
+      if (!tokenId) {
+        console.warn('Could not extract tokenId from transaction logs')
+        tokenId = 'Unknown'
       }
       
       const chainInfo = CONFIG.MINT_CHAINS[selectedChain]
@@ -134,6 +148,59 @@ export default function MintNFT({
         <h2>Select Chain and Mint</h2>
       </div>
 
+
+
+      {currentChainId && (
+        <div className="current-network-info" style={{ 
+          padding: '10px', 
+          marginBottom: '15px', 
+          background: currentChainId === selectedChain ? '#e8f5e9' : '#fff3e0', 
+          borderRadius: '8px',
+          fontSize: '14px',
+          border: currentChainId === selectedChain ? '1px solid #4caf50' : '1px solid #ff9800'
+        }}>
+          <strong>Connected to:</strong> {CONFIG.MINT_CHAINS[currentChainId]?.icon} {CONFIG.MINT_CHAINS[currentChainId]?.name || `Chain ${currentChainId}`}
+          {currentChainId !== selectedChain && (
+            <div style={{ marginTop: '8px' }}>
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  
+                  console.log('=== SWITCH BUTTON CLICKED ===')
+                  console.log('Target chain:', selectedChain)
+                  console.log('Current chain:', currentChainId)
+                  
+                  switchToChain(selectedChain)
+                    .then(() => {
+                      console.log('=== SWITCH SUCCESSFUL ===')
+                      showStatus(`Switched to ${CONFIG.MINT_CHAINS[selectedChain]?.name}!`, 'success')
+                    })
+                    .catch((error) => {
+                      console.error('=== SWITCH ERROR ===', error)
+                      
+                      // Network change errors are actually success - the network switched!
+                      if (error.code === 'NETWORK_ERROR' && error.message.includes('network changed')) {
+                        console.log('Network switched successfully (caught by ethers)')
+                        showStatus(`Switched to ${CONFIG.MINT_CHAINS[selectedChain]?.name}!`, 'success')
+                      } else if (error.code === 4001) {
+                        showStatus('Network switch cancelled', 'info')
+                      } else {
+                        showStatus(`Failed: ${error.message}`, 'error')
+                      }
+                    })
+                }}
+                className="btn btn-secondary"
+                style={{ fontSize: '12px', padding: '5px 10px' }}
+              >
+                🔄 Switch to {CONFIG.MINT_CHAINS[selectedChain]?.name}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="form-group">
         <label htmlFor="chainSelect">Choose Blockchain:</label>
         <select 
@@ -142,11 +209,16 @@ export default function MintNFT({
           onChange={(e) => setSelectedChain(e.target.value)}
           className="chain-dropdown"
         >
-          <option value="7001">⚡ ZetaChain Athens</option>
-          <option value="11155111">🔷 Ethereum Sepolia</option>
-          <option value="50312">� Somnioa Testnet</option>
-          <option value="11142220">🌿 Celo Sepolia</option>
-          <option value="10143">🔮 Monad Testnet</option>
+          {Object.entries(CONFIG.MINT_CHAINS)
+            .filter(([chainId]) => {
+              const address = CONFIG.CONTRACTS[chainId]
+              return address && address !== ''
+            })
+            .map(([chainId, chain]) => (
+              <option key={chainId} value={chainId}>
+                {chain.icon} {chain.name}
+              </option>
+            ))}
         </select>
       </div>
 

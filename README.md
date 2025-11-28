@@ -22,7 +22,9 @@ Or use the quick start script:
 start-react.bat
 ```
 
-The app will open at `http://localhost:3000`
+The app will open at `http://localhost:5173`
+
+**Important**: Don't open the root `index.html` file directly - it's just a redirect. Always run the dev server from the `frontend` directory.
 
 ### 3. Connect Your Wallet
 
@@ -38,13 +40,15 @@ The app will open at `http://localhost:3000`
 - **Pollinations AI** (always available fallback)
 
 ### ⚡ Multi-Chain Support
-Mint NFTs on any of these testnets:
-- ZetaChain Athens
-- Ethereum Sepolia
-- BSC Testnet
-- Polygon Mumbai
-- Arbitrum Sepolia
-- Base Sepolia
+Mint NFTs on any of these ZetaChain-supported testnets:
+- ⚡ ZetaChain Athens
+- 🔷 Ethereum Sepolia
+- 🔵 Base Sepolia
+- 🟣 Polygon Amoy
+- 🔷 Arbitrum Sepolia
+- 🟡 BSC Testnet
+- 🌸 Kaia Testnet
+- 🔺 Avalanche Fuji
 
 ### 🌐 Cross-Chain Transfers
 Transfer your NFTs between any supported chains using ZetaChain's Universal App protocol.
@@ -106,13 +110,27 @@ Edit `frontend/src/config.js` to customize:
 
 ## 📝 Smart Contract
 
-The Universal AI NFT contract is deployed on ZetaChain Athens testnet:
-- **Address**: `0x6e9ba39CedDa49eb2647Aef28ae30da9B005fc21`
-- **Features**:
-  - ERC721 compliant
-  - Cross-chain transfers via ZetaChain
-  - On-chain metadata storage
-  - AI-generated art support
+The Universal AI NFT contract needs to be deployed on all 8 supported networks.
+
+### Quick Deploy to All Networks
+```bash
+npx hardhat run scripts/deploy_all_chains.js --network zeta_testnet
+```
+
+### Deploy to Single Network
+```bash
+npx hardhat run scripts/deploy_single.js --network <network_name>
+```
+
+Supported networks: `zeta_testnet`, `sepolia`, `base_sepolia`, `polygon_amoy`, `arbitrum_sepolia`, `bsc_testnet`, `kaia_testnet`, `avalanche_fuji`
+
+**Features**:
+- ERC721 compliant
+- Cross-chain transfers via ZetaChain
+- On-chain metadata storage
+- AI-generated art support
+
+See [DEPLOYMENT_INSTRUCTIONS.md](DEPLOYMENT_INSTRUCTIONS.md) for detailed deployment guide.
 
 ## 🛠️ Development
 
@@ -174,10 +192,12 @@ npm run dev
 
 ## 📚 Documentation
 
+- **[🚀 READY TO DEPLOY](READY_TO_DEPLOY.md)** - Complete deployment guide (START HERE!)
+- [Quick Start - Frontend](QUICK_START_FRONTEND.md) - Fix "no body content" issue
+- [Deployment Instructions](DEPLOYMENT_INSTRUCTIONS.md) - Detailed deployment steps
+- [Fixes Applied](FIXES_APPLIED.md) - Summary of recent changes
 - [Frontend README](frontend/REACT_README.md)
 - [Wallet Connection Guide](WALLET_CONNECTION_FIX.md)
-- [Python Installation Guide](stable-diffusion-api/PYTHON_INSTALL_GUIDE.md)
-- [Deployment Guide](DEPLOYMENT_GUIDE.md)
 
 ## 🎯 Usage
 

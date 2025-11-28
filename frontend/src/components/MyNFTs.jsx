@@ -9,18 +9,7 @@ export default function MyNFTs({ signer, userAddress, showStatus, refreshTrigger
   const [showGallery, setShowGallery] = useState(false)
   const [selectedNFT, setSelectedNFT] = useState(null)
 
-  // Auto-fetch NFTs when wallet is connected (with delay to avoid race conditions)
-  useEffect(() => {
-    if (signer && userAddress) {
-      // Small delay to ensure contract is ready
-      const timer = setTimeout(() => {
-        loadMyNFTs()
-      }, 500)
-      return () => clearTimeout(timer)
-    }
-  }, [signer, userAddress])
-
-  // Auto-refresh when a new NFT is minted
+  // Auto-refresh only when a new NFT is minted (refreshTrigger changes)
   useEffect(() => {
     if (refreshTrigger && signer && userAddress) {
       // Delay to ensure blockchain has updated
@@ -38,21 +27,32 @@ export default function MyNFTs({ signer, userAddress, showStatus, refreshTrigger
 
     setLoading(true)
     console.log('Loading NFTs for address:', userAddress)
-    
+
     try {
-      const supportedChains = ['7001', '11155111', '80002', '50312', '11142220', '10143']
+      // Get all supported chains from CONFIG (only chains with deployed contracts)
+      const supportedChains = Object.keys(CONFIG.CONTRACTS).filter(chainId => {
+        const address = CONFIG.CONTRACTS[chainId]
+        return address && address !== '' && address !== '0x0000000000000000000000000000000000000000'
+      })
       const allNFTs = []
-      
+
       // Fetch NFTs from all supported chains
       for (const chainId of supportedChains) {
         try {
           const chainInfo = CONFIG.MINT_CHAINS[chainId]
+          const contractAddress = CONFIG.CONTRACTS[chainId]
+
+          if (!contractAddress) {
+            console.log(`No contract address for ${chainInfo.name}, skipping`)
+            continue
+          }
+
           console.log(`Checking ${chainInfo.name} (${chainId})...`)
-          
+
           // Try primary RPC URL first, then fallbacks
           let provider = null
           const rpcUrls = [chainInfo.rpcUrl, ...(chainInfo.fallbackRpcUrls || [])]
-          
+
           for (const rpcUrl of rpcUrls) {
             try {
               console.log(`Trying RPC: ${rpcUrl}`)
@@ -66,37 +66,36 @@ export default function MyNFTs({ signer, userAddress, showStatus, refreshTrigger
               provider = null
             }
           }
-          
+
           if (!provider) {
             console.error(`Could not connect to any RPC for ${chainInfo.name}`)
             continue
           }
-          
+
           // Check if contract exists on this chain
-          const code = await provider.getCode(CONFIG.CONTRACT_ADDRESS)
+          const code = await provider.getCode(contractAddress)
           if (code === '0x') {
             console.log(`Contract not deployed on ${chainInfo.name}`)
             continue
           }
 
-          // Get the correct contract address for this chain
-          const contractAddress = CONFIG.CONTRACTS[chainId] || CONFIG.CONTRACT_ADDRESS
+          // Create contract instance
           const contract = new ethers.Contract(contractAddress, CONTRACT_ABI, provider)
-          
+
           // Get user's NFT balance
           console.log(`Fetching NFT balance from ${chainInfo.name}...`)
           const balance = await contract.balanceOf(userAddress)
           console.log(`User has ${balance.toString()} NFT(s) on ${chainInfo.name}`)
-          
+
           // Fetch each NFT by index
           for (let i = 0; i < balance; i++) {
             try {
               const tokenId = await contract.tokenOfOwnerByIndex(userAddress, i)
               console.log(`Found NFT #${tokenId.toString()} on ${chainInfo.name}`)
-              
+
               const tokenURI = await contract.tokenURI(tokenId)
               const nftData = await parseTokenURI(tokenId.toString(), tokenURI)
-              
+
               // Add chain info
               nftData.chain = chainInfo.name
               nftData.chainIcon = chainInfo.icon
@@ -112,16 +111,16 @@ export default function MyNFTs({ signer, userAddress, showStatus, refreshTrigger
           continue
         }
       }
-      
+
       console.log(`Total NFTs found: ${allNFTs.length}`)
       setNfts(allNFTs)
       setShowGallery(true)
-      
+
       // Show success message if NFTs found
       if (allNFTs.length > 0) {
         showStatus(`Found ${allNFTs.length} NFT(s) across all chains`, 'success')
       }
-      
+
     } catch (error) {
       console.error('Error loading NFTs:', error)
       // Silently handle errors - just show empty gallery
@@ -142,7 +141,7 @@ export default function MyNFTs({ signer, userAddress, showStatus, refreshTrigger
         const response = await fetch(tokenURI)
         metadata = await response.json()
       }
-      
+
       return {
         tokenId,
         name: metadata.name,
@@ -162,7 +161,7 @@ export default function MyNFTs({ signer, userAddress, showStatus, refreshTrigger
       <section className="card my-nfts-section">
         <div className="nft-header">
           <h2>🖼️ My NFTs</h2>
-          <button 
+          <button
             onClick={loadMyNFTs}
             className="btn btn-secondary btn-refresh"
             disabled={loading || !signer}
@@ -171,7 +170,7 @@ export default function MyNFTs({ signer, userAddress, showStatus, refreshTrigger
             {loading ? '⏳ Loading...' : '🔄 Refresh'}
           </button>
         </div>
-        
+
         {!signer ? (
           <div className="no-nfts-container">
             <p className="no-nfts">Connect your wallet to view your NFTs</p>
@@ -194,8 +193,8 @@ export default function MyNFTs({ signer, userAddress, showStatus, refreshTrigger
               </div>
             ) : (
               nfts.map((nft) => (
-                <div 
-                  key={`${nft.chainId}-${nft.tokenId}`} 
+                <div
+                  key={`${nft.chainId}-${nft.tokenId}`}
                   className="nft-gallery-card"
                   onClick={() => setSelectedNFT(nft)}
                 >
